@@ -1,118 +1,141 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  collection,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  startAfter,
-  DocumentData,
-  QueryDocumentSnapshot,
+    collection,
+    getDocs,
+    limit,
+    orderBy,
+    query,
+    startAfter,
+    DocumentData,
+    QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import Header from "./components/Header";
+import RecipeCard from "./components/RecipeCard";
 
 type Ingredient = {
-  embedding: number[];
-  name: string;
+    embedding: number[];
+    name: string;
 };
 
 type Recipe = {
-  id: string;
-  name: string;
-  link_url: string;
-  offer_count?: number;
-  ingredients: Ingredient[];
+    id: string;
+    name: string;
+    link_url: string;
+    offer_count?: number;
+    ingredients: Ingredient[];
 };
 
 const PAGE_SIZE = 10;
 
 export default function Home() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
 
-  const fetchRecipes = async () => {
-    if (loading || !hasMore) return;
+    const fetchRecipes = async (startAfterDoc: QueryDocumentSnapshot<DocumentData> | null = null) => {
+        if (loading || !hasMore) return;
 
-    setLoading(true);
+        setLoading(true);
 
-    const baseQuery = query(
-      collection(db, "recipes"),
-      orderBy("offer_count", "desc"), // Prioritize recipes with more offers
-      limit(PAGE_SIZE),
-      ...(lastDoc ? [startAfter(lastDoc)] : [])
-    );
+        const baseQuery = query(
+            collection(db, "recipes"),
+            orderBy("offer_count", "desc"),
+            limit(PAGE_SIZE),
+            ...(startAfterDoc ? [startAfter(startAfterDoc)] : [])
+        );
 
-    const recipesSnap = await getDocs(baseQuery);
+        const recipesSnap = await getDocs(baseQuery);
 
-    if (recipesSnap.empty) {
-      setHasMore(false);
-      setLoading(false);
-      return;
-    }
+        if (recipesSnap.empty) {
+            setHasMore(false);
+            setLoading(false);
+            return;
+        }
 
-    const recipeList: Recipe[] = [];
+        const recipeList: Recipe[] = [];
 
-    for (const doc of recipesSnap.docs) {
-      const recipeData = doc.data();
-      const ingredientsSnap = await getDocs(collection(doc.ref, "ingredients"));
+        for (const doc of recipesSnap.docs) {
+            const recipeData = doc.data();
+            const ingredientsSnap = await getDocs(collection(doc.ref, "ingredients"));
 
-      const ingredients: Ingredient[] = ingredientsSnap.docs.map((ingDoc) => {
-        const data = ingDoc.data();
-        return {
-          name: data.name,
-          embedding: data.embedding,
+            const ingredients: Ingredient[] = ingredientsSnap.docs.map((ingDoc) => {
+                const data = ingDoc.data();
+                return {
+                    name: data.name,
+                    embedding: data.embedding,
+                };
+            });
+
+            recipeList.push({
+                id: doc.id,
+                name: recipeData.name,
+                link_url: recipeData.link_url,
+                offer_count: recipeData.offer_count,
+                ingredients,
+            });
+        }
+
+        setRecipes((prev) => [...prev, ...recipeList]);
+        setLastDoc(recipesSnap.docs[recipesSnap.docs.length - 1]);
+        setHasMore(recipesSnap.size === PAGE_SIZE);
+        setLoading(false);
+    };
+
+
+    useEffect(() => {
+        let hasFetched = false;
+
+        const resetAndFetch = async () => {
+            if (hasFetched || recipes.length > 0) return;
+            hasFetched = true;
+
+            setRecipes([]); // försäkra oss om tom
+            setLastDoc(null);
+            setHasMore(true);
+            await fetchRecipes(null);
         };
-      });
 
-      recipeList.push({
-        id: doc.id,
-        name: recipeData.name,
-        link_url: recipeData.link_url,
-        offer_count: recipeData.offer_count,
-        ingredients,
-      });
-    }
+        // Vänta en "tick" på att eventuell gammal state hinner återställas
+        const timeout = setTimeout(() => {
+            resetAndFetch();
+        }, 100);
 
-    setRecipes((prev) => [...prev, ...recipeList]);
-    setLastDoc(recipesSnap.docs[recipesSnap.docs.length - 1]);
-    setHasMore(recipesSnap.size === PAGE_SIZE);
-    setLoading(false);
-  };
+        return () => clearTimeout(timeout); // clean up om komponent tas bort snabbt
+    }, []);
 
-  return (
-    <div>
-      <Header/>
-      <div className="max-w-screen-lg mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 gap-6">
-          {recipes.map((recipe) => (
-            <div
-              key={recipe.id}
-              className="bg-white shadow-md rounded-2xl p-4 border border-gray-200 hover:shadow-lg transition hover:cursor-pointer"
-            >
-              <h2 className="text-xl font-semibold mb-1">{recipe.name.charAt(0).toUpperCase() + recipe.name.slice(1)}</h2>
-              <p className="text-sm text-gray-600">
-                {recipe.offer_count ?? 0} ingrediens{(recipe.offer_count ?? 0) === 1 ? "" : "er"} är på extrapris
-              </p>
+
+    return (
+        <div>
+            <Header />
+            <div className="max-w-screen-lg mx-auto px-4 py-6">
+                <div className="grid grid-cols-2 gap-6">
+                    {recipes.map((recipe) => (
+                        <RecipeCard
+                            key={recipe.id}
+                            id={recipe.id}
+                            name={recipe.name}
+                            offerCount={recipe.offer_count}
+                        />
+                    ))}
+                </div>
+                {hasMore && (
+                    <div className="mt-6 flex justify-center">
+                        <button
+                            onClick={() => {
+                                if (!loading) fetchRecipes(lastDoc);
+                            }}
+                            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded hover:cursor-pointer"
+                            disabled={loading}
+                        >
+                            {loading ? "Laddar..." : recipes.length > 0 ? "Visa fler recept" : "Visa recept"}
+                        </button>
+                    </div>
+                )}
             </div>
-          ))}
         </div>
-        {hasMore && (
-          <div className="mt-6 flex justify-center">
-            <button
-              onClick={fetchRecipes}
-              className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded hover:cursor-pointer"
-              disabled={loading}
-            >
-              {loading ? "Loading..." : recipes.length > 0 ? "Load More Recipes" : "View Recipes"}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 }
