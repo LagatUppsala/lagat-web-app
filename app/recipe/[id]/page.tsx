@@ -2,16 +2,13 @@ import { db } from "@/firebase/firebaseConfig";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import Header from "@/app/components/Header";
 
-type Props = {
-    params: { id: string };
-};
-
 type Offer = {
     name: string;
 };
 
-export default async function RecipePage({ params }: Props) {
-    const recipeRef = doc(db, "recipes", params.id);
+export default async function RecipePage(props: any) {
+    const id = props?.params?.id;
+    const recipeRef = doc(db, "recipes", id);
     const recipeSnap = await getDoc(recipeRef);
 
     if (!recipeSnap.exists()) {
@@ -19,10 +16,8 @@ export default async function RecipePage({ params }: Props) {
     }
 
     const recipeData = recipeSnap.data();
-
     const ingredientsSnap = await getDocs(collection(recipeRef, "ingredients"));
     const ingredients = ingredientsSnap.docs.map((doc) => doc.data());
-
     const offersSnap = await getDocs(collection(recipeRef, "offers"));
     const offers: Offer[] = offersSnap.docs.map((doc) => doc.data() as Offer);
 
