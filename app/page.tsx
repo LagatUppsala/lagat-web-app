@@ -25,6 +25,7 @@ type Recipe = {
     name: string;
     link_url: string;
     offer_count?: number;
+    img_url?: string;
     ingredients: Ingredient[];
 };
 
@@ -75,6 +76,7 @@ export default function Home() {
                 name: recipeData.name,
                 link_url: recipeData.link_url,
                 offer_count: recipeData.offer_count,
+                img_url: recipeData.img_url,
                 ingredients,
             });
         }
@@ -119,6 +121,7 @@ export default function Home() {
                             id={recipe.id}
                             name={recipe.name}
                             offerCount={recipe.offer_count}
+                            imgUrl = {recipe.img_url}
                         />
                     ))}
                 </div>
