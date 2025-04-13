@@ -8,8 +8,12 @@ type Offer = {
     similarity: number;
 };
 
-export default async function RecipePage(params: any) {
-    const id = await params.id;
+type Props = {
+    params: Promise<{ id: string }>;
+};
+
+export default async function RecipePage({ params }: Props) {
+    const { id } = await params;
 
     const recipeRef = doc(db, "recipes", id);
     const recipeSnap = await getDoc(recipeRef);
@@ -24,9 +28,7 @@ export default async function RecipePage(params: any) {
     const offersSnap = await getDocs(collection(recipeRef, "offers"));
     const offers: Offer[] = offersSnap.docs.map((doc) => doc.data() as Offer);
 
-    const offerNames = new Set(
-        offers.map((offer) => offer.ingredient.trim().toLowerCase())
-    );
+
 
     const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(
         recipeData.img_url.replace(/"/g, "")
