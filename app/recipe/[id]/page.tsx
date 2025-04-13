@@ -8,9 +8,8 @@ type Offer = {
     similarity: number;
 };
 
-export default async function RecipePage({ params }: { params: { id: string } }) {
-    const id = params.id;
-
+export default async function RecipePage(params: any) {
+    const id = await params.id;
 
     const recipeRef = doc(db, "recipes", id);
     const recipeSnap = await getDoc(recipeRef);
