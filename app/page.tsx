@@ -27,6 +27,13 @@ type Recipe = {
     offer_count?: number;
     img_url?: string;
     ingredients: Ingredient[];
+    offers: Offer[];
+};
+
+type Offer = {
+    name: string;
+    ingredient: string;
+    simliarity: number;
 };
 
 const PAGE_SIZE = 10;
@@ -71,6 +78,16 @@ export default function Home() {
                 };
             });
 
+            const offersSnap = await getDocs(collection(doc.ref, "offers"));
+            const offers: Offer[] = offersSnap.docs.map((offDoc) => {
+                const data = offDoc.data();
+                return {
+                    name: data.name,
+                    ingredient: data.ingredient,
+                    simliarity: data.similarity,
+                };
+            })
+
             recipeList.push({
                 id: doc.id,
                 name: recipeData.name,
@@ -78,6 +95,7 @@ export default function Home() {
                 offer_count: recipeData.offer_count,
                 img_url: recipeData.img_url,
                 ingredients,
+                offers,
             });
         }
 
@@ -122,6 +140,7 @@ export default function Home() {
                             name={recipe.name}
                             offerCount={recipe.offer_count}
                             imgUrl = {recipe.img_url}
+                            offers={recipe.offers}
                         />
                     ))}
                 </div>

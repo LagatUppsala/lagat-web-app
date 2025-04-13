@@ -4,10 +4,14 @@ import Header from "@/app/components/Header";
 
 type Offer = {
     name: string;
+    ingredient: string;
+    similarity: number;
 };
 
-export default async function RecipePage(props: any) {
-    const id = props?.params?.id;
+export default async function RecipePage({ params }: { params: { id: string } }) {
+    const id = params.id;
+
+
     const recipeRef = doc(db, "recipes", id);
     const recipeSnap = await getDoc(recipeRef);
 
@@ -21,32 +25,72 @@ export default async function RecipePage(props: any) {
     const offersSnap = await getDocs(collection(recipeRef, "offers"));
     const offers: Offer[] = offersSnap.docs.map((doc) => doc.data() as Offer);
 
+    const offerNames = new Set(
+        offers.map((offer) => offer.ingredient.trim().toLowerCase())
+    );
+
+    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(
+        recipeData.img_url.replace(/"/g, "")
+    )}`;
+
+    const capitalizedName = recipeData.name.charAt(0).toUpperCase() + recipeData.name.slice(1)
+
     return (
         <div>
             <Header />
-            <div className="max-w-screen-md mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold mb-4">{recipeData.name}</h1>
-                <p className="mb-6 text-gray-600">
-                    {recipeData.offer_count ?? 0} ingrediens{(recipeData.offer_count ?? 0) === 1 ? "" : "er"} är på extrapris
+            <div className="max-w-screen-lg mx-auto px-4 py-10">
+                <h1 className="text-4xl font-bold mb-2">{capitalizedName}</h1>
+                <p className="text-gray-600 mb-8">
+                    {recipeData.offer_count ?? 0} ingrediens
+                    {(recipeData.offer_count ?? 0) === 1 ? "" : "er"} är på extrapris
                 </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
+                    {/* Ingredients */}
+                    <div>
+                        <h2 className="text-2xl font-semibold mb-4">Ingredienser</h2>
+                        <ul className="space-y-2 text-gray-800 text-base">
+                            {ingredients.map((ingredient: any, idx: number) => {
+                                const ingName = ingredient.name?.trim().toLowerCase();
+
+                                const matchingOffer = offers.find(
+                                    (offer) => offer.ingredient?.trim().toLowerCase() === ingName
+                                );
+
+                                return (
+                                    <li key={idx}>
+                                        {ingredient.name}
+                                        {matchingOffer && (
+                                            <span className="text-orange-600 font-medium ml-2">
+                                                ({matchingOffer.name})
+                                            </span>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+
+                    {/* Recipe Image */}
+                    <div className="w-full h-64 md:h-full rounded-xl overflow-hidden shadow-lg">
+                        <img
+                            src={proxyUrl}
+                            alt={recipeData.name}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                </div>
 
                 {offers.length > 0 && (
                     <div className="mb-8">
-                        <h2 className="text-xl font-semibold mb-2">Erbjudanden</h2>
-                        <ul className="list-disc pl-6 text-gray-700">
+                        <h2 className="text-xl font-semibold mb-3">Alla erbjudanden</h2>
+                        <ul className="list-disc pl-5 text-gray-700">
                             {offers.map((offer, idx) => (
-                                <li key={idx}>{offer.name}</li>
+                                <li key={idx}>Du kan byta ut <span className="text-orange-600 font-medium">{offer.ingredient}</span> mot <span className="text-orange-600 font-medium">{offer.name}</span></li>
                             ))}
                         </ul>
                     </div>
                 )}
-
-                <h2 className="text-xl font-semibold mb-2">Ingredienser</h2>
-                <ul className="list-disc pl-6 text-gray-700">
-                    {ingredients.map((ingredient: any, idx: number) => (
-                        <li key={idx}>{ingredient.name}</li>
-                    ))}
-                </ul>
             </div>
         </div>
     );
