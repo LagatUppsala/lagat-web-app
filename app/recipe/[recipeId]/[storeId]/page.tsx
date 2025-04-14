@@ -1,6 +1,7 @@
 import { db } from "@/firebase/firebaseConfig";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import Header from "@/app/components/Header";
+import { GetServerSideProps } from "next";
 
 type Offer = {
     name: string;
@@ -9,13 +10,13 @@ type Offer = {
 };
 
 type Props = {
-    params: Promise<{ id: string }>;
+    params: Promise<{ recipeId: string, storeId: string }>;
 };
 
 export default async function RecipePage({ params }: Props) {
-    const { id } = await params;
+    const { recipeId, storeId } = await params;
 
-    const recipeRef = doc(db, "recipes", id);
+    const recipeRef = doc(db, "recipes", recipeId);
     const recipeSnap = await getDoc(recipeRef);
 
     if (!recipeSnap.exists()) {
@@ -25,10 +26,8 @@ export default async function RecipePage({ params }: Props) {
     const recipeData = recipeSnap.data();
     const ingredientsSnap = await getDocs(collection(recipeRef, "ingredients"));
     const ingredients = ingredientsSnap.docs.map((doc) => doc.data());
-    const offersSnap = await getDocs(collection(recipeRef, "offers"));
+    const offersSnap = await getDocs(collection(recipeRef, `offers_${storeId}`));
     const offers: Offer[] = offersSnap.docs.map((doc) => doc.data() as Offer);
-
-
 
     const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(
         recipeData.img_url.replace(/"/g, "")
@@ -41,10 +40,6 @@ export default async function RecipePage({ params }: Props) {
             <Header />
             <div className="max-w-screen-lg mx-auto px-4 py-10">
                 <h1 className="text-4xl font-bold mb-2">{capitalizedName}</h1>
-                <p className="text-gray-600 mb-8">
-                    {recipeData.offer_count ?? 0} ingrediens
-                    {(recipeData.offer_count ?? 0) === 1 ? "" : "er"} är på extrapris
-                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
                     {/* Ingredients */}

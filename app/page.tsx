@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     collection,
     getDocs,
@@ -36,6 +36,22 @@ type Offer = {
     simliarity: number;
 };
 
+type Store = {
+    id: string;
+    name: string;
+}
+
+const storeOptions: Store[] = [
+    { id: "0", name: "ICA Supermarket Luthagens Livs" },
+    { id: "1", name: "ICA Folkes Livs" },
+    { id: "2", name: "ICA Supermarket Väst" },
+    { id: "3", name: "Ica Supermarket City, Uppsala" },
+    { id: "4", name: "Maxi ICA Stormarknad Stenhagen Uppsala" },
+    { id: "5", name: "ICA Vretgränd" },
+    { id: "6", name: "ICA Nära Hörnan" },
+    { id: "7", name: "ICA Nära Rosendal" },
+];
+
 const PAGE_SIZE = 10;
 
 export default function Home() {
@@ -43,15 +59,27 @@ export default function Home() {
     const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [selectedStore, setSelectedStore] = useState("0")
 
-    const fetchRecipes = async (startAfterDoc: QueryDocumentSnapshot<DocumentData> | null = null) => {
+    useEffect(() => {
+
+        setRecipes([]);
+        setLastDoc(null);
+        setHasMore(true);
+
+    }, [selectedStore]);
+
+
+
+    const fetchRecipes = async (startAfterDoc: QueryDocumentSnapshot<DocumentData> | null = null, currentStore: string = selectedStore) => {
         if (loading || !hasMore) return;
-
         setLoading(true);
+
+        const orderField = `offer_counts.${currentStore}`;
 
         const baseQuery = query(
             collection(db, "recipes"),
-            orderBy("offer_count", "desc"),
+            orderBy(orderField, "desc"),
             limit(PAGE_SIZE),
             ...(startAfterDoc ? [startAfter(startAfterDoc)] : [])
         );
@@ -78,7 +106,7 @@ export default function Home() {
                 };
             });
 
-            const offersSnap = await getDocs(collection(doc.ref, "offers"));
+            const offersSnap = await getDocs(collection(doc.ref, `offers_${currentStore}`));
             const offers: Offer[] = offersSnap.docs.map((offDoc) => {
                 const data = offDoc.data();
                 return {
@@ -132,15 +160,34 @@ export default function Home() {
         <div>
             <Header />
             <div className="max-w-screen-lg mx-auto px-4 py-6">
+                {/* Search/Select store at the top */}
+                <div className="mb-6">
+                    <label htmlFor="storeSelect" className="mr-2 font-medium">
+                        Välj butik:
+                    </label>
+                    <select
+                        id="storeSelect"
+                        value={selectedStore}
+                        onChange={(e) => setSelectedStore(e.target.value)}
+                        className="border rounded px-2 py-1"
+                    >
+                        {storeOptions.map((store) => (
+                            <option key={store.id} value={store.id}>
+                                {store.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-6">
                     {recipes.map((recipe) => (
                         <RecipeCard
                             key={recipe.id}
-                            id={recipe.id}
+                            recipeId={recipe.id}
                             name={recipe.name}
-                            offerCount={recipe.offer_count}
-                            imgUrl = {recipe.img_url}
+                            imgUrl={recipe.img_url}
                             offers={recipe.offers}
+                            storeId={selectedStore}
                         />
                     ))}
                 </div>
