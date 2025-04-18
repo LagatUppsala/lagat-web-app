@@ -19,8 +19,6 @@ export default function SignInForm() {
 
         try {
             const userCred = await signInWithEmailAndPassword(auth, email, password);
-            const ID_TOKEN = await userCred.user.getIdToken()
-            console.log("ID_TOKEN:", ID_TOKEN);
             router.push('/userdashboard');
         } catch (err: any) {
             setError(err.message);
