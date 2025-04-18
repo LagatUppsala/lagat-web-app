@@ -39,6 +39,8 @@ export default async function RecipePage({ params }: Props) {
         <div>
             <Header />
             <div className="max-w-screen-lg mx-auto px-4 py-10">
+                
+
                 <h1 className="text-4xl font-bold mb-2">{capitalizedName}</h1>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
