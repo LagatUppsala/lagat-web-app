@@ -21,7 +21,7 @@ export default function RecipeCard({ recipeId, name, imgUrl = "", offers = [], s
   const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
 
   return (
-    <Link href={`/recipe/${recipeId}/${storeId}`} className="group block w-full max-w-md">
+    <Link href={`/recipes/${recipeId}/${storeId}`} className="group block w-full max-w-md">
       <div className="relative h-full flex flex-col rounded-2xl border border-gray-200 bg-white hover:shadow-sm transition-shadow overflow-hidden">
         <div className="relative w-full h-72 overflow-hidden">
           <img

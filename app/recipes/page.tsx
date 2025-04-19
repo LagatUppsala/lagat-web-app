@@ -2,56 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import {
-    collection,
-    getDocs,
-    limit,
-    orderBy,
-    query,
-    startAfter,
-    DocumentData,
-    QueryDocumentSnapshot,
-} from "firebase/firestore";
+import { collection, getDocs, limit, orderBy, query, startAfter, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { auth, db } from "@/firebase/firebaseConfig";
 import Header from "../components/Header";
 import RecipeCard from "../components/RecipeCard";
-
-type Ingredient = {
-    embedding: number[];
-    name: string;
-};
-
-type Recipe = {
-    id: string;
-    name: string;
-    link_url: string;
-    offer_count?: number;
-    img_url?: string;
-    ingredients: Ingredient[];
-    offers: Offer[];
-};
-
-type Offer = {
-    name: string;
-    ingredient: string;
-    simliarity: number;
-};
-
-type Store = {
-    id: string;
-    name: string;
-};
-
-const storeOptions: Store[] = [
-    { id: "0", name: "ICA Supermarket Luthagens Livs" },
-    { id: "1", name: "ICA Folkes Livs" },
-    { id: "2", name: "ICA Supermarket Väst" },
-    { id: "3", name: "Ica Supermarket City, Uppsala" },
-    { id: "4", name: "Maxi ICA Stormarknad Stenhagen Uppsala" },
-    { id: "5", name: "ICA Vretgränd" },
-    { id: "6", name: "ICA Nära Hörnan" },
-    { id: "7", name: "ICA Nära Rosendal" },
-];
+import { Ingredient, Offer, Recipe } from "../lib/types";
+import { storeOptions } from "../lib/constants";
 
 const PAGE_SIZE = 10;
 
