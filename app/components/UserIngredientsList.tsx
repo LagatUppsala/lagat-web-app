@@ -97,7 +97,7 @@ export default function UserIngredientList({ uid }: { uid: string }) {
                 />
                 <button
                     type="submit"
-                    className="bg-amber-500 text-white px-4 py-2 rounded"
+                    className="bg-amber-500 text-white px-4 py-2 rounded hover:cursor-pointer transition-color hover:bg-amber-600"
                 >
                     Lägg till
                 </button>

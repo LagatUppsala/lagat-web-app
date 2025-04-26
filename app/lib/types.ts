@@ -11,7 +11,14 @@ export type Recipe = {
     img_url?: string;
     ingredients: Ingredient[];
     offers: Offer[];
+    matchingIngredients: Match[];
 };
+
+export type Match = {
+    name: string;
+    match: string;
+    simliarity: number;
+}
 
 export type Offer = {
     name: string;

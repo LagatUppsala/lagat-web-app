@@ -1,31 +1,43 @@
 // app/recipes/[recipeId]/[storeId]/RecipeClient.tsx
 "use client";
 
-import { useParams } from "next/navigation";                    // client‑only hook :contentReference[oaicite:0]{index=0}
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
-import { db } from "@/firebase/firebaseConfig";
+import { db, auth } from "@/firebase/firebaseConfig";
 import Header from "@/app/components/Header";
-import { Ingredient, Offer } from "@/app/lib/types";
+import { Ingredient, Offer, Match } from "@/app/lib/types";
 
 export default function RecipeClient() {
     const { recipeId, storeId } = useParams<{
         recipeId: string;
         storeId: string;
-    }>();                                                       // reads /recipes/[recipeId]/[storeId] :contentReference[oaicite:1]{index=1}
+    }>();
 
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [offers, setOffers] = useState<Offer[]>([]);
     const [recipeData, setRecipeData] = useState<any>(null);
+    const [matches, setMatches] = useState<Match[]>([])
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!recipeId || !storeId) return;
 
+        const user = auth.currentUser;
+        if (!user) return;
+
         const fetchData = async () => {
             setLoading(true);
 
-            // 1) Fetch recipe
+            // Fetch matches from recommende_recipes
+            const userId = user.uid
+            const matchesRef = collection(db, `users/${userId}/recommended_recipes/${recipeId}/matches`)
+            const matchesSnap = await getDocs(matchesRef)
+            setMatches(
+                matchesSnap.docs.map(d => d.data() as Match)
+            )
+
+            // Fetch recipe from recipes
             const recipeRef = doc(db, "recipes", recipeId);
             const recipeSnap = await getDoc(recipeRef);
             if (!recipeSnap.exists()) {
@@ -35,28 +47,30 @@ export default function RecipeClient() {
             const data = recipeSnap.data();
             setRecipeData(data);
 
-            // 2) Fetch ingredients
+            // Fetch ingredients
             const ingSnap = await getDocs(collection(recipeRef, "ingredients"));
             setIngredients(
                 ingSnap.docs.map(d => d.data() as Ingredient)
             );
 
-            // 3) Fetch offers
+            // Fetch offers
             const offSnap = await getDocs(collection(recipeRef, `offers_${storeId}`));
             setOffers(
                 offSnap.docs.map(d => d.data() as Offer)
             );
 
+
+
             setLoading(false);
         };
 
         fetchData();
-    }, [recipeId, storeId]);
+    }, [recipeId, storeId, auth.currentUser]);
 
     if (loading) return <p>Loading…</p>;
     if (!recipeData) return <p>Recipe not found</p>;
 
-    const cleanedImgUrl = recipeData.img_url.replace(/"/g, "");  // Remove any quotes from img_url
+    const cleanedImgUrl = recipeData.img_url.replace(/"/g, "");
     const proxyUrl = cleanedImgUrl
         ? `/api/image-proxy?url=${encodeURIComponent(cleanedImgUrl)}`
         : "/lagat-logo-kilo.png";
@@ -79,15 +93,23 @@ export default function RecipeClient() {
                         <ul className="space-y-2 text-gray-800 text-base">
                             {ingredients.map((ing, idx) => {
                                 const keyName = ing.name.trim().toLowerCase();
-                                const match = offers.find(
+                                const offerMatch = offers.find(
                                     o => o.ingredient.trim().toLowerCase() === keyName
                                 );
+                                const recipeMatch = matches.find(
+                                    (m) => m.match.trim().toLowerCase() === keyName
+                                );
                                 return (
-                                    <li key={idx}>
-                                        {ing.name}
-                                        {match && (
+                                    <li key={idx} className="flex items-center">
+                                        <span>{ing.name}</span>
+                                        {offerMatch && (
                                             <span className="text-orange-600 font-medium ml-2">
-                                                ({match.name})
+                                                ({offerMatch.name})
+                                            </span>
+                                        )}
+                                        {recipeMatch && (
+                                            <span className="text-green-600 font-medium ml-2">
+                                                Du har {recipeMatch.name}!
                                             </span>
                                         )}
                                     </li>

@@ -1,20 +1,16 @@
 import Link from "next/link";
-
-type Offer = {
-  name: string;
-  ingredient: string;
-  simliarity: number;
-};
+import { Match, Offer } from "../lib/types";
 
 type RecipeCardProps = {
   recipeId: string;
   name: string;
   imgUrl?: string;
   offers: Offer[];
+  matchingIngredients: Match[];
   storeId: string;
 };
 
-export default function RecipeCard({ recipeId, name, imgUrl = "", offers = [], storeId }: RecipeCardProps) {
+export default function RecipeCard({ recipeId, name, imgUrl = "", offers = [], matchingIngredients, storeId }: RecipeCardProps) {
   const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(
     imgUrl.replace(/"/g, "")
   )}`;
@@ -40,12 +36,12 @@ export default function RecipeCard({ recipeId, name, imgUrl = "", offers = [], s
         </div>
         <div className="flex-grow px-5 py-4">
           <h2 className="text-2xl font-medium text-amber-500">{capitalizedName}</h2>
-          <p className="mb-1 text-sm text-gray-600">
+          <p>
+            {matchingIngredients.length} ingrediens{matchingIngredients.length === 1 ? "" : "er"} matchar med ditt kylskåp
+          </p>
+          <p>
             {offers.length} ingrediens{offers.length === 1 ? "" : "er"} på extrapris
           </p>
-          {offers.length > 0 ? <p>{offers[0].name.charAt(0).toUpperCase() + offers[0].name.slice(1)} är på extrapris!</p> : <></>}
-          {offers.length > 1 ? <p>{offers[1].name.charAt(0).toUpperCase() + offers[1].name.slice(1)} är på extrapris!</p> : <></>}
-          {offers.length > 2 ? <p className="text-bold">Och mer!</p> : <></>}
         </div>
       </div>
     </Link>

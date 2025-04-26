@@ -7,13 +7,16 @@ import { getDoc, doc } from "firebase/firestore";
 import { auth, db } from "@/firebase/firebaseConfig";
 import UserIngredientList from "../components/UserIngredientsList";
 import { useRouter } from "next/navigation";
+import { storeOptions } from "../lib/constants";
+import { Store } from "../lib/types";
 
 export default function UserDashboard() {
     const router = useRouter();
 
     const [user, setUser] = useState<User | null>(null);
     const [userData, setUserData] = useState<any | null>(null);
-    
+    const [prefStoreId, setPrefStoreId] = useState("")
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (u) => {
             if (u) {
@@ -21,9 +24,11 @@ export default function UserDashboard() {
                 const userRef = doc(db, "users", u.uid);
                 const snap = await getDoc(userRef);
                 setUserData(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+                setPrefStoreId(snap.exists() ? snap.data().preferred_store : "")
             } else {
                 setUser(null);
                 setUserData(null);
+                setPrefStoreId("")
             }
         });
         return () => unsubscribe();
@@ -41,6 +46,25 @@ export default function UserDashboard() {
     const handleSignOut = () => {
         auth.signOut();
         router.push("/");
+    }
+
+    const handlePrefStoreChange = async (id: string) => {
+        const storeId = id.trim()
+
+        try {
+            const token = await auth.currentUser!.getIdToken()
+            await fetch("https://europe-north1-lagat-e1c30.cloudfunctions.net/update_preferred_store", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ store_id: storeId }),
+            })
+        } catch (e) {
+            console.error(e)
+        }
+        
     }
 
     return (
@@ -92,7 +116,25 @@ export default function UserDashboard() {
                             Logga ut
                         </button>
                     </div>
-                    {user.uid ? <UserIngredientList uid={user.uid}/> : <p>Kunde inte hitta aktiv användare</p>}
+                    <div className="mb-6">
+                        <label htmlFor="storeSelect" className="mr-2 font-medium">
+                            Välj din huvudbutik i Uppsala:
+                        </label>
+                        <select
+                            id="storeSelect"
+                            value={prefStoreId}
+                            onChange={(e) => handlePrefStoreChange(e.target.value)}
+                            className="border rounded px-2 py-1"
+                        >
+                            <option value="">-- Välj butik --</option>
+                            {storeOptions.map((store) => (
+                                <option key={store.id} value={store.id}>
+                                    {store.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {user.uid ? <UserIngredientList uid={user.uid} /> : <p>Kunde inte hitta aktiv användare</p>}
                 </div>
             </div>
         </>

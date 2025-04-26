@@ -11,7 +11,7 @@ export default function HomePage() {
             <section className="min-h-screen flex items-center justify-between px-8 py-16 bg-white">
                 {/* Left Text Section */}
                 <div className="max-w-xl">
-                    <h1 className="text-5xl font-bold leading-tight text-amber-500 mb-6">
+                    <h1 className="text-7xl font-bold leading-none text-amber-500 mb-6">
                         Smartare matlagning börjar här
                     </h1>
                     <p className="text-lg text-gray-800 mb-8">
