@@ -1,4 +1,3 @@
-// app/recipes/[recipeId]/[storeId]/RecipeClient.tsx
 "use client";
 
 import { useParams } from "next/navigation";
@@ -9,35 +8,46 @@ import Header from "@/app/components/Header";
 import { Ingredient, Offer, Match } from "@/app/lib/types";
 
 export default function RecipeClient() {
-    const { recipeId, storeId } = useParams<{
-        recipeId: string;
-        storeId: string;
-    }>();
+    const { recipeId, storeId } = useParams<{ recipeId: string; storeId: string }>();
 
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [offers, setOffers] = useState<Offer[]>([]);
     const [recipeData, setRecipeData] = useState<any>(null);
-    const [matches, setMatches] = useState<Match[]>([])
+    const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
+    const [dots, setDots] = useState("");
+
+    // animate dots while loading
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+        if (loading) {
+            interval = setInterval(() => {
+                setDots((prev) => (prev.length < 3 ? prev + "." : ""));
+            }, 500);
+        } else {
+            setDots("");
+        }
+        return () => clearInterval(interval);
+    }, [loading]);
 
     useEffect(() => {
         if (!recipeId || !storeId) return;
-
         const user = auth.currentUser;
         if (!user) return;
 
         const fetchData = async () => {
             setLoading(true);
 
-            // Fetch matches from recommende_recipes
-            const userId = user.uid
-            const matchesRef = collection(db, `users/${userId}/recommended_recipes/${recipeId}/matches`)
-            const matchesSnap = await getDocs(matchesRef)
-            setMatches(
-                matchesSnap.docs.map(d => d.data() as Match)
-            )
+            // Fetch matches
+            const userId = user.uid;
+            const matchesRef = collection(
+                db,
+                `users/${userId}/recommended_recipes/${recipeId}/matches`
+            );
+            const matchesSnap = await getDocs(matchesRef);
+            setMatches(matchesSnap.docs.map((d) => d.data() as Match));
 
-            // Fetch recipe from recipes
+            // Fetch recipe
             const recipeRef = doc(db, "recipes", recipeId);
             const recipeSnap = await getDoc(recipeRef);
             if (!recipeSnap.exists()) {
@@ -49,17 +59,13 @@ export default function RecipeClient() {
 
             // Fetch ingredients
             const ingSnap = await getDocs(collection(recipeRef, "ingredients"));
-            setIngredients(
-                ingSnap.docs.map(d => d.data() as Ingredient)
-            );
+            setIngredients(ingSnap.docs.map((d) => d.data() as Ingredient));
 
             // Fetch offers
-            const offSnap = await getDocs(collection(recipeRef, `offers_${storeId}`));
-            setOffers(
-                offSnap.docs.map(d => d.data() as Offer)
+            const offSnap = await getDocs(
+                collection(recipeRef, `offers_${storeId}`)
             );
-
-
+            setOffers(offSnap.docs.map((d) => d.data() as Offer));
 
             setLoading(false);
         };
@@ -67,14 +73,38 @@ export default function RecipeClient() {
         fetchData();
     }, [recipeId, storeId, auth.currentUser]);
 
-    if (loading) return <p>Loading…</p>;
-    if (!recipeData) return <p>Recipe not found</p>;
+    // loading state
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col">
+                <Header />
+                <div className="flex-1 flex items-center justify-center">
+                    <p className="text-amber-500 text-center text-lg font-semibold">
+                        Laddar{dots}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // no recipe
+    if (!recipeData) {
+        return (
+            <div className="min-h-screen flex flex-col">
+                <Header />
+                <div className="flex-1 flex items-center justify-center">
+                    <p className="text-amber-500 text-center text-lg font-semibold">
+                        Recipe not found
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     const cleanedImgUrl = recipeData.img_url.replace(/"/g, "");
     const proxyUrl = cleanedImgUrl
         ? `/api/image-proxy?url=${encodeURIComponent(cleanedImgUrl)}`
         : "/lagat-logo-kilo.png";
-    console.log("proxyUrl: ", proxyUrl)
 
     const capitalizedName =
         recipeData.name.charAt(0).toUpperCase() + recipeData.name.slice(1);
@@ -82,7 +112,6 @@ export default function RecipeClient() {
     return (
         <div>
             <Header />
-
             <div className="max-w-screen-lg mx-auto px-4 py-10">
                 <h1 className="text-4xl font-bold mb-2">{capitalizedName}</h1>
 
@@ -94,7 +123,7 @@ export default function RecipeClient() {
                             {ingredients.map((ing, idx) => {
                                 const keyName = ing.name.trim().toLowerCase();
                                 const offerMatch = offers.find(
-                                    o => o.ingredient.trim().toLowerCase() === keyName
+                                    (o) => o.ingredient.trim().toLowerCase() === keyName
                                 );
                                 const recipeMatch = matches.find(
                                     (m) => m.match.trim().toLowerCase() === keyName
@@ -127,7 +156,6 @@ export default function RecipeClient() {
                                 className="w-full h-full object-cover"
                             />
                         </div>
-
                     )}
                 </div>
 
@@ -138,12 +166,14 @@ export default function RecipeClient() {
                         <ul className="list-disc pl-5 text-gray-700">
                             {offers.map((o, i) => (
                                 <li key={i}>
-                                    Du kan byta ut{" "}
+                                    Du kan byta ut{' '}
                                     <span className="text-orange-600 font-medium">
                                         {o.ingredient}
-                                    </span>{" "}
-                                    mot{" "}
-                                    <span className="text-orange-600 font-medium">{o.name}</span>
+                                    </span>{' '}
+                                    mot{' '}
+                                    <span className="text-orange-600 font-medium">
+                                        {o.name}
+                                    </span>
                                 </li>
                             ))}
                         </ul>
