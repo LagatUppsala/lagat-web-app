@@ -46,7 +46,7 @@ export default function SignUpForm() {
     };
 
     return (
-        <div className="bg-white p-8 rounded shadow-lg w-full max-w-md">
+        <div className="bg-white p-4 md:p-8 rounded shadow-lg w-full max-w-md">
             <h1 className="text-4xl font-bold text-amber-500 mb-6 text-center">
                 Skapa Konto
             </h1>
@@ -74,13 +74,13 @@ export default function SignUpForm() {
                         htmlFor="name"
                         className="block text-gray-700 text-2xl font-bold mb-2"
                     >
-                        NAME
+                        NAMN
                     </label>
                     <input
                         type="text"
                         id="name"
                         name="name"
-                        placeholder="ditt namn"
+                        placeholder="Ditt namn"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required

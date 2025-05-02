@@ -8,7 +8,7 @@ export default function SignUpPage() {
     return (
         <div>
             <Header />
-            <div className="flex items-center justify-center pt-20">
+            <div className="flex items-center justify-center pt-10 md:pt-20">
                 <SignUpForm />
             </div>
         </div>

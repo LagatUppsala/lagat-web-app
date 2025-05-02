@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { auth } from "@/firebase/firebaseConfig";
 import { collection, onSnapshot } from "firebase/firestore";
@@ -13,6 +14,7 @@ interface Ingredient {
 export default function UserIngredientList({ uid }: { uid: string }) {
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [newIngredient, setNewIngredient] = useState("");
+    const [showFridgeDesc, setShowFridgeDesc] = useState(false);
 
     useEffect(() => {
         if (!uid) return;
@@ -23,25 +25,20 @@ export default function UserIngredientList({ uid }: { uid: string }) {
                     id: doc.id,
                     name: doc.data().name as string,
                 }));
-                // Filter out optimistic items that have been confirmed by server
                 const serverNames = new Set(serverItems.map((i) => i.name));
-                const optimistic = prev.filter(
-                    (i) => i.isOptimistic && !serverNames.has(i.name)
-                );
+                const optimistic = prev.filter((i) => i.isOptimistic && !serverNames.has(i.name));
                 return [...optimistic, ...serverItems];
             });
         });
         return () => unsubscribe();
     }, [uid]);
 
-    // Add new ingredient
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         const name = newIngredient.trim();
         if (!name) return;
 
         const tempId = `temp-${Date.now()}`;
-        // Optimistic UI update
         setIngredients((prev) => [{ id: tempId, name, isOptimistic: true }, ...prev]);
         setNewIngredient("");
 
@@ -55,16 +52,13 @@ export default function UserIngredientList({ uid }: { uid: string }) {
                 },
                 body: JSON.stringify({ ingredient: name }),
             });
-
         } catch (err) {
             setIngredients((prev) => prev.filter((i) => i.id !== tempId));
             console.error(err);
         }
     };
 
-    // Remove ingredient
     const handleRemove = async (item: Ingredient) => {
-        // Optimistic removal
         setIngredients((prev) => prev.filter((i) => i.id !== item.id));
         if (item.isOptimistic) return;
 
@@ -79,15 +73,46 @@ export default function UserIngredientList({ uid }: { uid: string }) {
                 body: JSON.stringify({ id: item.id }),
             });
         } catch (err) {
-            // Rollback on error
             setIngredients((prev) => [item, ...prev]);
             console.error(err);
         }
     };
 
     return (
-        <div>
-            <form onSubmit={handleAdd} className="flex gap-2 mb-4">
+        <div className="min-w-screen-md">
+            <div className="flex-1 relative md:flex-[2]">
+                <div
+                    className="flex items-center cursor-pointer"
+                    onClick={() => setShowFridgeDesc(prev => !prev)}
+                >
+                    <h2 className="text-2xl font-bold">Mitt Kylskåp</h2>
+                    <svg
+                        className={`w-6 h-6 ml-2 transform transition-transform duration-200 ${showFridgeDesc ? 'rotate-90' : ''}`}
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        stroke="#000000"
+                        strokeWidth="2.04"
+                    >
+                        <path
+                            fillRule="evenodd"
+                            clipRule="evenodd"
+                            d="M9.96967 16.2803C9.67678 15.9874 9.67678 15.5126 9.96967 15.2197L13.1893 12L9.96967 8.78033C9.67678 8.48744 9.67678 8.01256 9.96967 7.71967C10.2626 7.42678 10.7374 7.42678 11.0303 7.71967L14.7803 11.4697C15.0732 11.7626 15.0732 12.2374 14.7803 12.5303L11.0303 16.2803C10.7374 16.5732 10.2626 16.5732 9.96967 16.2803Z"
+                            fill="#000000"
+                        />
+                    </svg>
+                </div>
+
+                {showFridgeDesc && (
+                    <div className="absolute top-full left-0 mt-2 w-60 bg-white rounded-md shadow-lg p-4 z-20">
+                        <p className="text-md text-gray-600">
+                            Lägg till ingredienser i ditt kylskåp! Vi matchar ingredienserna mot recept så att du kan spara pengar och få matinspiration. Klicka på en ingrediens för att ta bort den.
+                        </p>
+                    </div>
+                )}
+            </div>
+            <span className="text-gray-500 text-sm leading-thight">Du kan behöva vänta ett ögonblick efter du har lagt till ingredienser innan du kan se rätt rekommenderade recept i receptflödet!</span>
+            <form onSubmit={handleAdd} className="flex flex-col md:flex-row gap-2 mb-4">
                 <input
                     type="text"
                     value={newIngredient}

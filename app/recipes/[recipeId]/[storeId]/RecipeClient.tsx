@@ -17,7 +17,6 @@ export default function RecipeClient() {
     const [loading, setLoading] = useState(true);
     const [dots, setDots] = useState("");
 
-    // animate dots while loading
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         if (loading) {
@@ -38,7 +37,6 @@ export default function RecipeClient() {
         const fetchData = async () => {
             setLoading(true);
 
-            // Fetch matches
             const userId = user.uid;
             const matchesRef = collection(
                 db,
@@ -47,7 +45,6 @@ export default function RecipeClient() {
             const matchesSnap = await getDocs(matchesRef);
             setMatches(matchesSnap.docs.map((d) => d.data() as Match));
 
-            // Fetch recipe
             const recipeRef = doc(db, "recipes", recipeId);
             const recipeSnap = await getDoc(recipeRef);
             if (!recipeSnap.exists()) {
@@ -57,11 +54,9 @@ export default function RecipeClient() {
             const data = recipeSnap.data();
             setRecipeData(data);
 
-            // Fetch ingredients
             const ingSnap = await getDocs(collection(recipeRef, "ingredients"));
             setIngredients(ingSnap.docs.map((d) => d.data() as Ingredient));
 
-            // Fetch offers
             const offSnap = await getDocs(
                 collection(recipeRef, `offers_${storeId}`)
             );
@@ -71,9 +66,8 @@ export default function RecipeClient() {
         };
 
         fetchData();
-    }, [recipeId, storeId, auth.currentUser]);
+    }, [recipeId, storeId]);
 
-    // loading state
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col">
@@ -87,7 +81,6 @@ export default function RecipeClient() {
         );
     }
 
-    // no recipe
     if (!recipeData) {
         return (
             <div className="min-h-screen flex flex-col">
@@ -101,7 +94,7 @@ export default function RecipeClient() {
         );
     }
 
-    const cleanedImgUrl = recipeData.img_url.replace(/"/g, "");
+    const cleanedImgUrl = recipeData.img_url.replace(/\"/g, "");
     const proxyUrl = cleanedImgUrl
         ? `/api/image-proxy?url=${encodeURIComponent(cleanedImgUrl)}`
         : "/lagat-logo-kilo.png";
@@ -117,7 +110,7 @@ export default function RecipeClient() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
                     {/* Ingredients */}
-                    <div>
+                    <div className="order-last md:order-first">
                         <h2 className="text-2xl font-semibold mb-4">Ingredienser</h2>
                         <ul className="space-y-2 text-gray-800 text-base">
                             {ingredients.map((ing, idx) => {
@@ -149,7 +142,7 @@ export default function RecipeClient() {
 
                     {/* Recipe Image */}
                     {proxyUrl && (
-                        <div className="w-full h-[80%] rounded-xl overflow-hidden shadow-lg">
+                        <div className="order-first md:order-last w-full h-64 md:h-auto rounded-xl overflow-hidden shadow-lg">
                             <img
                                 src={proxyUrl}
                                 alt={recipeData.name}
@@ -159,7 +152,6 @@ export default function RecipeClient() {
                     )}
                 </div>
 
-                {/* Offers */}
                 {offers.length > 0 && (
                     <div className="mb-8">
                         <h2 className="text-xl font-semibold mb-3">Alla erbjudanden</h2>

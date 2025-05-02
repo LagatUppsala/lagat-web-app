@@ -19,6 +19,7 @@ import {
     QueryDocumentSnapshot,
     DocumentData,
 } from "firebase/firestore";
+import Link from "next/link";
 
 const PAGE_SIZE = 10;
 
@@ -34,7 +35,6 @@ export default function RecipePage() {
     const [hasMore, setHasMore] = useState(true);
     const [dots, setDots] = useState("");
 
-    // dots animation for both initial and loading more
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         const isLoading = (loading && recipes.length === 0) || loadingMore;
@@ -48,28 +48,21 @@ export default function RecipePage() {
         return () => clearInterval(interval);
     }, [loading, loadingMore, recipes.length]);
 
-    // auth listener
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
         return () => unsubscribe();
     }, []);
 
-    // fetch preferred store
     useEffect(() => {
         if (!user) return;
         (async () => {
-            try {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    setSelectedStore(userDoc.data().preferred_store || "");
-                }
-            } catch (err) {
-                console.error("Could not load preferred store:", err);
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+                setSelectedStore(userDoc.data().preferred_store || "");
             }
         })();
     }, [user]);
 
-    // reset & load initial + prefetch
     useEffect(() => {
         if (!user) return;
         setRecipes([]);
@@ -87,18 +80,22 @@ export default function RecipePage() {
         const recSnap = await getDocs(
             query(baseCol, orderBy("match_count", "desc"), limit(PAGE_SIZE))
         );
-        const fetched: Recipe[] = await Promise.all(
+        const fetched = await Promise.all(
             recSnap.docs.map(async (docSnap) => {
                 const id = docSnap.id;
                 const dataSnap = await getDoc(doc(db, "recipes", id));
                 if (!dataSnap.exists()) throw new Error("Missing recipe");
                 const data = dataSnap.data();
-                const offers = (await getDocs(
-                    collection(dataSnap.ref, `offers_${selectedStore}`)
-                )).docs.map(o => o.data() as Offer);
-                const matches = (await getDocs(
-                    collection(db, "users", user!.uid, "recommended_recipes", id, "matches")
-                )).docs.map(m => m.data() as Match);
+                const offers = (
+                    await getDocs(
+                        collection(dataSnap.ref, `offers_${selectedStore}`)
+                    )
+                ).docs.map((o) => o.data() as Offer);
+                const matches = (
+                    await getDocs(
+                        collection(db, "users", user!.uid, "recommended_recipes", id, "matches")
+                    )
+                ).docs.map((m) => m.data() as Match);
                 return { id, name: data.name, link_url: data.link_url, img_url: data.img_url, offer_count: data.offer_count, ingredients: [], offers, matchingIngredients: matches };
             })
         );
@@ -110,24 +107,27 @@ export default function RecipePage() {
         if (lastDoc) prefetchNextPage(lastDoc);
     };
 
-    // prefetch next page
     const prefetchNextPage = async (cursor: QueryDocumentSnapshot<DocumentData>) => {
         const baseCol = collection(db, "users", user!.uid, "recommended_recipes");
         const nextSnap = await getDocs(
             query(baseCol, orderBy("match_count", "desc"), startAfter(cursor), limit(PAGE_SIZE))
         );
-        const nextFetched: Recipe[] = await Promise.all(
+        const nextFetched = await Promise.all(
             nextSnap.docs.map(async (docSnap) => {
                 const id = docSnap.id;
                 const dataSnap = await getDoc(doc(db, "recipes", id));
                 if (!dataSnap.exists()) throw new Error("Missing recipe");
                 const data = dataSnap.data();
-                const offers = (await getDocs(
-                    collection(dataSnap.ref, `offers_${selectedStore}`)
-                )).docs.map(o => o.data() as Offer);
-                const matches = (await getDocs(
-                    collection(db, "users", user!.uid, "recommended_recipes", id, "matches")
-                )).docs.map(m => m.data() as Match);
+                const offers = (
+                    await getDocs(
+                        collection(dataSnap.ref, `offers_${selectedStore}`)
+                    )
+                ).docs.map((o) => o.data() as Offer);
+                const matches = (
+                    await getDocs(
+                        collection(db, "users", user!.uid, "recommended_recipes", id, "matches")
+                    )
+                ).docs.map((m) => m.data() as Match);
                 return { id, name: data.name, link_url: data.link_url, img_url: data.img_url, offer_count: data.offer_count, ingredients: [], offers, matchingIngredients: matches };
             })
         );
@@ -135,40 +135,41 @@ export default function RecipePage() {
         setPrefetchLastVisible(nextSnap.docs[nextSnap.docs.length - 1] || null);
     };
 
-    // handle view more always clickable
     const handleViewMore = async () => {
         setLoadingMore(true);
-        // if prefetched exists, show immediately
         if (prefetchRecipes.length > 0) {
-            setRecipes(prev => [...prev, ...prefetchRecipes]);
+            setRecipes((prev) => [...prev, ...prefetchRecipes]);
             setLastVisible(prefetchLastVisible);
             setHasMore(prefetchRecipes.length === PAGE_SIZE);
             const nextCursor = prefetchLastVisible;
             setPrefetchRecipes([]);
             if (nextCursor) await prefetchNextPage(nextCursor);
         } else {
-            // no prefetch yet: fetch next directly
             const cursor = lastVisible;
             const baseCol = collection(db, "users", user!.uid, "recommended_recipes");
             const nextSnap = await getDocs(
                 query(baseCol, orderBy("match_count", "desc"), startAfter(cursor!), limit(PAGE_SIZE))
             );
-            const fetched: Recipe[] = await Promise.all(
-                nextSnap.docs.map(async docSnap => {
+            const fetched = await Promise.all(
+                nextSnap.docs.map(async (docSnap) => {
                     const id = docSnap.id;
                     const dataSnap = await getDoc(doc(db, "recipes", id));
                     if (!dataSnap.exists()) throw new Error("Missing recipe");
                     const data = dataSnap.data();
-                    const offers = (await getDocs(
-                        collection(dataSnap.ref, `offers_${selectedStore}`)
-                    )).docs.map(o => o.data() as Offer);
-                    const matches = (await getDocs(
-                        collection(db, "users", user!.uid, "recommended_recipes", id, "matches")
-                    )).docs.map(m => m.data() as Match);
+                    const offers = (
+                        await getDocs(
+                            collection(dataSnap.ref, `offers_${selectedStore}`)
+                        )
+                    ).docs.map((o) => o.data() as Offer);
+                    const matches = (
+                        await getDocs(
+                            collection(db, "users", user!.uid, "recommended_recipes", id, "matches")
+                        )
+                    ).docs.map((m) => m.data() as Match);
                     return { id, name: data.name, link_url: data.link_url, img_url: data.img_url, offer_count: data.offer_count, ingredients: [], offers, matchingIngredients: matches };
                 })
             );
-            setRecipes(prev => [...prev, ...fetched]);
+            setRecipes((prev) => [...prev, ...fetched]);
             const lastDoc = nextSnap.docs[nextSnap.docs.length - 1] || lastVisible;
             setLastVisible(lastDoc);
             setHasMore(nextSnap.docs.length === PAGE_SIZE);
@@ -182,9 +183,7 @@ export default function RecipePage() {
             <div className="min-h-screen flex flex-col">
                 <Header />
                 <div className="flex-1 flex items-center justify-center">
-                    <p className="text-amber-500 text-center text-lg font-semibold">
-                        Laddar{dots}
-                    </p>
+                    <p className="text-amber-500 text-center text-lg font-semibold">Laddar{dots}</p>
                 </div>
             </div>
         );
@@ -195,9 +194,7 @@ export default function RecipePage() {
             <div className="min-h-screen flex flex-col">
                 <Header />
                 <div className="flex-1 flex items-center justify-center">
-                    <p className="text-amber-500 text-center">
-                        Skapa ett konto för att se rekommendationer och erbjudanden
-                    </p>
+                    <p className="text-amber-500 text-center">Skapa ett konto för att se rekommendationer och erbjudanden</p>
                 </div>
             </div>
         );
@@ -207,16 +204,17 @@ export default function RecipePage() {
         <div className="min-h-screen flex flex-col">
             <Header />
             <div className="flex-1">
-                <div className="max-w-screen-lg mx-auto px-4 py-6">
-                    <div className="mb-6">
-                        <label htmlFor="storeSelect" className="mr-2 font-medium">
-                            Välj butik:
-                        </label>
+                <div className="px-4 py-6 flex flex-col items-center">
+                    {!hasMore &&
+                        <div className="text-xl pb-8">Testa att lägga till fler ingredienser i ditt kylskåp i din <Link className="text-amber-500 font-bold" href="/userdashboard">profil</Link></div>
+                    }
+                    <div className="mb-6 w-full max-w-sm">
+                        <label htmlFor="storeSelect" className="block mb-1 font-medium">Kontrollera extrapriser i andra affärer?</label>
                         <select
                             id="storeSelect"
                             value={selectedStore}
                             onChange={(e) => setSelectedStore(e.target.value)}
-                            className="border rounded px-2 py-1"
+                            className="w-full border rounded px-2 py-1"
                         >
                             <option value="">-- Välj butik --</option>
                             {storeOptions.map((store) => (
@@ -227,17 +225,18 @@ export default function RecipePage() {
                         </select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center">
                         {recipes.map((recipe) => (
-                            <RecipeCard
-                                key={recipe.id}
-                                recipeId={recipe.id}
-                                name={recipe.name}
-                                imgUrl={recipe.img_url}
-                                offers={recipe.offers}
-                                matchingIngredients={recipe.matchingIngredients}
-                                storeId={selectedStore}
-                            />
+                            <div key={recipe.id} className="w-full max-w-md">
+                                <RecipeCard
+                                    recipeId={recipe.id}
+                                    name={recipe.name}
+                                    imgUrl={recipe.img_url}
+                                    offers={recipe.offers}
+                                    matchingIngredients={recipe.matchingIngredients}
+                                    storeId={selectedStore}
+                                />
+                            </div>
                         ))}
                     </div>
 

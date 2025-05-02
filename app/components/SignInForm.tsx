@@ -26,7 +26,7 @@ export default function SignInForm() {
     };
 
     return (
-        <div className="bg-white p-8 rounded shadow-lg w-full max-w-md">
+        <div className="bg-white p-4 md:p-8 rounded shadow-lg w-full max-w-md">
             <h1 className="text-4xl font-bold text-amber-500 mb-6 text-center">
                 Välkommen tillbaka
             </h1>
