@@ -55,8 +55,7 @@ export default function RecipePage() {
 
         if (!Array.isArray(ids)) {
           console.error(
-            "Unexpected response format from recommend_recipes:",
-            data
+            "Unexpected response format from recommend_recipes"
           );
           return;
         }
@@ -82,14 +81,14 @@ export default function RecipePage() {
                 fetchedRecipes.push(recipe);
               }
             } catch (err) {
-              console.error(`Failed to fetch recipe ${id}:`, err);
+              console.error(`Failed to fetch recipe ${id}`);
             }
           })
         );
 
         setRecipes((prev) => [...prev, ...fetchedRecipes]);
       } catch (err) {
-        console.error("Failed to fetch recipe IDs:", err);
+        console.error("Failed to fetch recipe IDs");
       }
     };
 
@@ -114,7 +113,7 @@ export default function RecipePage() {
       const ids = data.recipe_ids;
 
       if (!Array.isArray(ids)) {
-        console.error("Unexpected response format from recommend_recipes:", data);
+        console.error("Unexpected response format from recommend_recipes:");
         return;
       }
 
@@ -139,14 +138,14 @@ export default function RecipePage() {
               fetchedRecipes.push(recipe);
             }
           } catch (err) {
-            console.error(`Failed to fetch recipe ${id}:`, err);
+            console.error(`Failed to fetch recipe ${id}`);
           }
         })
       );
       console.log("Fetched recipes:", fetchedRecipes);
       setRecipes((prev) => [...prev, ...fetchedRecipes]);
     } catch (err) {
-      console.error("Failed to load more recipes:", err);
+      console.error("Failed to load more recipes");
     }
   }
 
