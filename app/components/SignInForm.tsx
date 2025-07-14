@@ -19,7 +19,9 @@ export default function SignInForm() {
 
         try {
             const userCred = await signInWithEmailAndPassword(auth, email, password);
-            router.push('/userdashboard');
+            // Redirect to the home page after successful sign-in.
+            router.push('/');
+
         } catch (err: any) {
             setError(err.message);
         }

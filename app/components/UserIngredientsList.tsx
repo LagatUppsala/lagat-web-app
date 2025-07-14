@@ -50,11 +50,11 @@ export default function UserIngredientList({ uid }: { uid: string }) {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ ingredient: name }),
+                body: JSON.stringify({ ingredient: name }), // TODO add quantity and check response for error handling
             });
         } catch (err) {
             setIngredients((prev) => prev.filter((i) => i.id !== tempId));
-            console.error(err);
+            console.error("Failed to add ingredient");
         }
     };
 
@@ -74,7 +74,7 @@ export default function UserIngredientList({ uid }: { uid: string }) {
             });
         } catch (err) {
             setIngredients((prev) => [item, ...prev]);
-            console.error(err);
+            console.error("failed to remove ingredient");
         }
     };
 

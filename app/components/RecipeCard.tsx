@@ -5,19 +5,24 @@ type RecipeCardProps = {
   recipeId: string;
   name: string;
   imgUrl?: string;
-  offers: Offer[];
-  matchingIngredients: Match[];
-  storeId: string;
+  sourceId: string;
+  price: number;
 };
 
-export default function RecipeCard({ recipeId, name, imgUrl = "", offers = [], matchingIngredients, storeId }: RecipeCardProps) {
+export default function RecipeCard({
+  recipeId,
+  name,
+  imgUrl = "",
+  sourceId,
+  price,
+}: RecipeCardProps) {
   const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(
     imgUrl.replace(/"/g, "")
   )}`;
   const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
 
   return (
-    <Link href={`/recipes/${recipeId}/${storeId}`} className="group block w-full max-w-md">
+    <Link href={`/recipes/${recipeId}`} className="group block w-full max-w-md">
       <div className="relative h-full flex flex-col rounded-2xl border border-gray-200 bg-white hover:shadow-sm transition-shadow overflow-hidden">
         <div className="relative w-full h-72 overflow-hidden">
           <img
@@ -35,13 +40,10 @@ export default function RecipeCard({ recipeId, name, imgUrl = "", offers = [], m
           />
         </div>
         <div className="flex-grow px-5 py-4">
-          <h2 className="text-2xl font-medium text-amber-500">{capitalizedName}</h2>
-          <p>
-            {matchingIngredients.length} ingrediens{matchingIngredients.length === 1 ? "" : "er"} matchar med ditt kylskåp
-          </p>
-          <p>
-            {offers.length} ingrediens{offers.length === 1 ? "" : "er"} på extrapris
-          </p>
+          <h2 className="text-2xl font-medium text-amber-500">
+            {capitalizedName}
+          </h2>
+          {price ? <p>En portion kostar {price}kr</p> : <p></p>}
         </div>
       </div>
     </Link>
