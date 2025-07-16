@@ -6,6 +6,7 @@ import { db, auth } from "@/firebase/firebaseConfig";
 import Header from "../components/Header";
 import { onAuthStateChanged, User } from "firebase/auth";
 import RecipeCard from "../components/RecipeCard";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 type DisplayRecipe = {
   id: string;
@@ -23,6 +24,7 @@ export default function RecipePage() {
   const [recipes, setRecipes] = useState<DisplayRecipe[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [recipeLoading, setRecipeLoading] = useState(true);
 
   // Listen for auth state
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function RecipePage() {
     if (userLoading || !user) return;
 
     const fetchRecipeIds = async () => {
+      setRecipeLoading(true);
       try {
         const idToken = await user.getIdToken();
 
@@ -54,9 +57,7 @@ export default function RecipePage() {
         const ids = data.recipe_ids;
 
         if (!Array.isArray(ids)) {
-          console.error(
-            "Unexpected response format from recommend_recipes"
-          );
+          console.error("Unexpected response format from recommend_recipes");
           return;
         }
 
@@ -90,6 +91,7 @@ export default function RecipePage() {
       } catch (err) {
         console.error("Failed to fetch recipe IDs");
       }
+      setRecipeLoading(false);
     };
 
     fetchRecipeIds();
@@ -97,6 +99,7 @@ export default function RecipePage() {
 
   const handleLoadMore = async () => {
     if (userLoading || !user) return;
+    setRecipeLoading(true);
     try {
       const idToken = await user.getIdToken();
 
@@ -142,26 +145,35 @@ export default function RecipePage() {
           }
         })
       );
-      console.log("Fetched recipes:", fetchedRecipes);
       setRecipes((prev) => [...prev, ...fetchedRecipes]);
     } catch (err) {
       console.error("Failed to load more recipes");
     }
-  }
+    setRecipeLoading(false);
+  };
 
   if (userLoading) {
     return (
       <>
         <Header />
-        <div className="flex items-center justify-center h-screen">
-          <p className="text-gray-500">Laddar...</p>
+        <LoadingSpinner />
+      </>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <Header />
+        <div className="flex justify-center items-center min-h-screen">
+          <p className="text-lg text-gray-700">Logga in för att se recept</p>
         </div>
       </>
     );
   }
 
   return (
-    <>
+    <div className="pb-12">
       <Header />
       <div className="flex justify-center">
         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4 max-w-5xl w-full">
@@ -177,9 +189,20 @@ export default function RecipePage() {
           ))}
         </div>
       </div>
-      <div className="flex justify-center align-center">
-        <button onClick={handleLoadMore} className="px-4 py-2 bg-amber-500 text-white rounded cursor-pointer hover:bg-amber-700 transition-colors duration-200">Mer recept</button>
-      </div>
-    </>
+      {recipeLoading ? (
+        <div className="flex justify-center items-center w-full">
+          <LoadingSpinner />
+        </div>
+      ) : (
+        <div className="flex justify-center align-center">
+          <button
+            onClick={handleLoadMore}
+            className="px-4 py-2 bg-amber-500 text-white rounded cursor-pointer hover:bg-amber-700 transition-colors duration-200"
+          >
+            Mer recept
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
