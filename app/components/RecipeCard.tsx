@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Match, Offer } from "../lib/types";
 
+
 type RecipeCardProps = {
   recipeId: string;
   name: string;
@@ -43,7 +44,7 @@ export default function RecipeCard({
           <h2 className="text-2xl font-medium text-amber-500">
             {capitalizedName}
           </h2>
-          {price ? <p>En portion kostar {price}kr</p> : <p></p>}
+          {price ? <p>En portion kostar {Math.floor(price)}kr</p> : <p></p>}
         </div>
       </div>
     </Link>
